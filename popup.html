@@ -1,30 +1,42 @@
-{
-  "manifest_version": 3,
-  "name": "Stay Focused",
-  "version": "1.0.0",
-  "description": "Block distracting sites and run focus timer sessions to help you stay on task.",
-  "permissions": ["storage", "alarms", "tabs", "webNavigation"],
-  "host_permissions": ["<all_urls>"],
-  "background": {
-    "service_worker": "background.js"
-  },
-  "action": {
-    "default_popup": "popup.html",
-    "default_icon": {
-      "16": "icons/icon16.png",
-      "48": "icons/icon48.png",
-      "128": "icons/icon128.png"
-    }
-  },
-  "icons": {
-    "16": "icons/icon16.png",
-    "48": "icons/icon48.png",
-    "128": "icons/icon128.png"
-  },
-  "web_accessible_resources": [
-    {
-      "resources": ["blocked.html"],
-      "matches": ["<all_urls>"]
-    }
-  ]
-}
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Stay Focused</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🎯 Stay Focused</h1>
+    </header>
+
+    <section id="timerSection" class="card">
+      <div id="idleView">
+        <label for="durationInput">Session length (minutes)</label>
+        <input type="number" id="durationInput" min="1" max="180" value="25" />
+        <button id="startBtn" class="primary-btn">Start Focus Session</button>
+        <button id="testStartBtn" class="test-btn">Start 1-min test session</button>
+      </div>
+
+      <div id="activeView" class="hidden">
+        <p class="status-label">Focus session active</p>
+        <div id="countdown" class="countdown">25:00</div>
+        <button id="stopBtn" class="secondary-btn">End Session</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Blocked Sites</h2>
+      <div class="add-row">
+        <input type="text" id="siteInput" placeholder="e.g. youtube.com" />
+        <button id="addBtn">Add</button>
+      </div>
+      <p id="siteError" class="error-msg hidden"></p>
+      <ul id="siteList"></ul>
+    </section>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

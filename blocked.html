@@ -1,108 +1,93 @@
-// background.js — Service worker: manages timer state and blocks sites during focus sessions
-
-const DEFAULTS = {
-  blockList: ["youtube.com", "twitter.com", "x.com", "facebook.com", "instagram.com", "reddit.com", "tiktok.com"],
-  sessionActive: false,
-  sessionEndTime: null,
-  sessionDurationMin: 25
-};
-
-// ---- Init defaults on install ----
-chrome.runtime.onInstalled.addListener(async () => {
-  const existing = await chrome.storage.local.get(null);
-  const toSet = {};
-  for (const key in DEFAULTS) {
-    if (!(key in existing)) toSet[key] = DEFAULTS[key];
-  }
-  if (Object.keys(toSet).length) await chrome.storage.local.set(toSet);
-});
-
-// ---- Helper: get current state ----
-async function getState() {
-  const data = await chrome.storage.local.get(["blockList", "sessionActive", "sessionEndTime", "sessionDurationMin"]);
-  return { ...DEFAULTS, ...data };
-}
-
-// ---- Helper: check + auto-expire session ----
-async function checkSessionExpiry() {
-  const state = await getState();
-  if (state.sessionActive && state.sessionEndTime && Date.now() >= state.sessionEndTime) {
-    await chrome.storage.local.set({ sessionActive: false, sessionEndTime: null });
-    return { ...state, sessionActive: false, sessionEndTime: null };
-  }
-  return state;
-}
-
-// ---- Alarm to end session precisely on time ----
-chrome.alarms.onAlarm.addListener(async (alarm) => {
-  if (alarm.name === "focusSessionEnd") {
-    await chrome.storage.local.set({ sessionActive: false, sessionEndTime: null });
-  }
-});
-
-// ---- Messages from popup ----
-chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
-  (async () => {
-    if (msg.type === "START_SESSION") {
-      const minutes = msg.minutes || 25;
-      const endTime = Date.now() + minutes * 60 * 1000;
-      await chrome.storage.local.set({
-        sessionActive: true,
-        sessionEndTime: endTime,
-        sessionDurationMin: minutes
-      });
-      chrome.alarms.create("focusSessionEnd", { when: endTime });
-      sendResponse({ ok: true });
-    } else if (msg.type === "STOP_SESSION") {
-      await chrome.storage.local.set({ sessionActive: false, sessionEndTime: null });
-      chrome.alarms.clear("focusSessionEnd");
-      sendResponse({ ok: true });
-    } else if (msg.type === "GET_STATE") {
-      const state = await checkSessionExpiry();
-      sendResponse(state);
-    } else if (msg.type === "ADD_SITE") {
-      const state = await getState();
-      const site = normalizeHost(msg.site);
-      if (site && !state.blockList.includes(site)) {
-        const updated = [...state.blockList, site];
-        await chrome.storage.local.set({ blockList: updated });
-        sendResponse({ ok: true, blockList: updated });
-      } else {
-        sendResponse({ ok: false, blockList: state.blockList });
-      }
-    } else if (msg.type === "REMOVE_SITE") {
-      const state = await getState();
-      const updated = state.blockList.filter((s) => s !== msg.site);
-      await chrome.storage.local.set({ blockList: updated });
-      sendResponse({ ok: true, blockList: updated });
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Stay Focused</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e, #232342);
+      color: #f0f0f5;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
     }
-  })();
-  return true; // keep channel open for async response
-});
+    .box { max-width: 420px; padding: 40px; }
+    .emoji { font-size: 56px; margin-bottom: 20px; }
+    h1 { font-size: 24px; margin-bottom: 10px; }
+    p { opacity: 0.8; font-size: 15px; margin-bottom: 24px; line-height: 1.5; }
+    #countdown {
+      font-size: 28px;
+      font-weight: 700;
+      color: #6c63ff;
+      margin-bottom: 24px;
+      font-variant-numeric: tabular-nums;
+    }
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      background: #3a3a5e;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button:hover { background: #4a4a78; }
+    .site { color: #6c63ff; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <div class="emoji">🎯</div>
+    <h1>Stay focused!</h1>
+    <p><span id="siteName" class="site"></span> is blocked during your focus session.</p>
+    <div id="countdown">--:--</div>
+    <button id="backBtn">Go Back</button>
+  </div>
 
-function normalizeHost(input) {
-  if (!input) return null;
-  let s = input.trim().toLowerCase();
-  s = s.replace(/^https?:\/\//, "").replace(/^www\./, "").split("/")[0];
-  return s || null;
-}
+  <script>
+    const params = new URLSearchParams(location.search);
+    document.getElementById("siteName").textContent = params.get("site") || "This site";
 
-// ---- Block navigation during active sessions ----
-chrome.webNavigation?.onBeforeNavigate?.addListener?.(async (details) => {
-  if (details.frameId !== 0) return; // only top-level frames
-  const state = await checkSessionExpiry();
-  if (!state.sessionActive) return;
+    document.getElementById("backBtn").addEventListener("click", () => {
+      if (history.length > 1) {
+        history.back();
+      } else {
+        // No safe history to go back to — send to the new tab page instead
+        // of about:blank, which would otherwise be a dead end for the user.
+        location.href = "chrome://newtab";
+      }
+    });
 
-  let host;
-  try {
-    host = new URL(details.url).hostname.replace(/^www\./, "");
-  } catch (e) {
-    return;
-  }
-
-  const isBlocked = state.blockList.some((site) => host === site || host.endsWith("." + site));
-  if (isBlocked) {
-    const blockedUrl = chrome.runtime.getURL("blocked.html") + "?site=" + encodeURIComponent(host);
-    chrome.tabs.update(details.tabId, { url: blockedUrl });
-  }
-});
+    function tick() {
+      try {
+        chrome.runtime.sendMessage({ type: "GET_STATE" }, (state) => {
+          if (chrome.runtime.lastError) {
+            document.getElementById("countdown").textContent = "—";
+            return;
+          }
+          if (!state || !state.sessionActive || !state.sessionEndTime) {
+            document.getElementById("countdown").textContent = "Session ended";
+            return;
+          }
+          const remaining = Math.max(0, state.sessionEndTime - Date.now());
+          const totalSec = Math.floor(remaining / 1000);
+          const m = Math.floor(totalSec / 60);
+          const s = totalSec % 60;
+          document.getElementById("countdown").textContent =
+            `${m}:${s.toString().padStart(2, "0")} remaining`;
+        });
+      } catch (e) {
+        // Extension context can be invalidated (e.g. reload during dev) —
+        // fail quietly rather than throwing in the page.
+        document.getElementById("countdown").textContent = "—";
+      }
+    }
+    tick();
+    setInterval(tick, 1000);
+  </script>
+</body>
+</html>

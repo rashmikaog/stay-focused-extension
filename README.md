@@ -9,6 +9,7 @@ A browser extension that blocks distracting websites while a focus timer is runn
 - You can add or remove sites from the block list at any time from the popup.
 - Pre-loaded block list: YouTube, Twitter/X, Facebook, Instagram, Reddit, TikTok. Remove any you don't want blocked.
 - The timer keeps running even if you close the popup, switch tabs, or restart your browser — it only stops when the time is up or you click "End Session."
+- There's also a "Start 1-min test session" button, handy for quickly checking that blocking works without waiting a full 25 minutes.
 
 ## How to install it in your browser
 

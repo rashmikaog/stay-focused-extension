@@ -1,168 +1,151 @@
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+// popup.js — drives the popup UI
+
+const idleView = document.getElementById("idleView");
+const activeView = document.getElementById("activeView");
+const durationInput = document.getElementById("durationInput");
+const startBtn = document.getElementById("startBtn");
+const testStartBtn = document.getElementById("testStartBtn");
+const stopBtn = document.getElementById("stopBtn");
+const countdownEl = document.getElementById("countdown");
+const siteInput = document.getElementById("siteInput");
+const addBtn = document.getElementById("addBtn");
+const siteList = document.getElementById("siteList");
+const siteError = document.getElementById("siteError");
+
+let tickInterval = null;
+
+function sendMessage(msg) {
+  return new Promise((resolve) => {
+    chrome.runtime.sendMessage(msg, (response) => {
+      if (chrome.runtime.lastError) {
+        console.error("Stay Focused: message failed —", chrome.runtime.lastError.message);
+        resolve({ ok: false, reason: "no_response" });
+        return;
+      }
+      resolve(response || { ok: false, reason: "empty_response" });
+    });
+  });
 }
 
-body {
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  width: 320px;
-  background: #1a1a2e;
-  color: #f0f0f5;
+function formatTime(ms) {
+  const totalSec = Math.max(0, Math.floor(ms / 1000));
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return `${m}:${s.toString().padStart(2, "0")}`;
 }
 
-.container {
-  padding: 16px;
+function renderSiteList(blockList) {
+  siteList.innerHTML = "";
+  blockList.forEach((site) => {
+    const li = document.createElement("li");
+    const span = document.createElement("span");
+    span.textContent = site;
+    const removeBtn = document.createElement("button");
+    removeBtn.textContent = "✕";
+    removeBtn.title = "Remove";
+    removeBtn.addEventListener("click", async () => {
+      const res = await sendMessage({ type: "REMOVE_SITE", site });
+      renderSiteList(res.blockList);
+    });
+    li.appendChild(span);
+    li.appendChild(removeBtn);
+    siteList.appendChild(li);
+  });
 }
 
-header h1 {
-  font-size: 18px;
-  margin-bottom: 12px;
-  text-align: center;
+function startTicking(endTime) {
+  clearInterval(tickInterval);
+  function tick() {
+    const remaining = endTime - Date.now();
+    if (remaining <= 0) {
+      clearInterval(tickInterval);
+      showIdle();
+      return;
+    }
+    countdownEl.textContent = formatTime(remaining);
+  }
+  tick();
+  tickInterval = setInterval(tick, 1000);
 }
 
-.card {
-  background: #232342;
-  border-radius: 12px;
-  padding: 14px;
-  margin-bottom: 12px;
+function showActive(endTime) {
+  idleView.classList.add("hidden");
+  activeView.classList.remove("hidden");
+  startTicking(endTime);
 }
 
-.card h2 {
-  font-size: 13px;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  opacity: 0.7;
-  margin-bottom: 10px;
+function showIdle() {
+  clearInterval(tickInterval);
+  activeView.classList.add("hidden");
+  idleView.classList.remove("hidden");
 }
 
-label {
-  display: block;
-  font-size: 12px;
-  opacity: 0.8;
-  margin-bottom: 6px;
+async function init() {
+  const state = await sendMessage({ type: "GET_STATE" });
+  renderSiteList(state.blockList || []);
+  if (state.sessionActive && state.sessionEndTime) {
+    showActive(state.sessionEndTime);
+  } else {
+    showIdle();
+  }
 }
 
-input[type="number"],
-input[type="text"] {
-  width: 100%;
-  padding: 8px 10px;
-  border-radius: 8px;
-  border: 1px solid #3a3a5e;
-  background: #16162b;
-  color: #f0f0f5;
-  font-size: 14px;
-  margin-bottom: 10px;
-}
+startBtn.addEventListener("click", async () => {
+  if (startBtn.disabled) return;
+  startBtn.disabled = true;
+  try {
+    const minutes = Math.max(1, Math.min(180, parseInt(durationInput.value, 10) || 25));
+    const res = await sendMessage({ type: "START_SESSION", minutes });
+    if (res && res.ok) {
+      showActive(res.endTime);
+    }
+  } finally {
+    startBtn.disabled = false;
+  }
+});
 
-input[type="number"]:focus,
-input[type="text"]:focus {
-  outline: none;
-  border-color: #6c63ff;
-}
+testStartBtn.addEventListener("click", async () => {
+  if (testStartBtn.disabled) return;
+  testStartBtn.disabled = true;
+  try {
+    const res = await sendMessage({ type: "START_SESSION", seconds: 60, minutes: 1 });
+    if (res && res.ok) {
+      showActive(res.endTime);
+    }
+  } finally {
+    testStartBtn.disabled = false;
+  }
+});
 
-.primary-btn {
-  width: 100%;
-  padding: 10px;
-  border: none;
-  border-radius: 8px;
-  background: #6c63ff;
-  color: white;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-}
+stopBtn.addEventListener("click", async () => {
+  stopBtn.disabled = true;
+  try {
+    await sendMessage({ type: "STOP_SESSION" });
+    showIdle();
+  } finally {
+    stopBtn.disabled = false;
+  }
+});
 
-.primary-btn:hover {
-  background: #5a52e0;
-}
+addBtn.addEventListener("click", async () => {
+  siteError.classList.add("hidden");
+  const value = siteInput.value.trim();
+  if (!value) return;
+  const res = await sendMessage({ type: "ADD_SITE", site: value });
+  if (res.ok) {
+    siteInput.value = "";
+    renderSiteList(res.blockList);
+  } else {
+    siteError.textContent =
+      res.reason === "duplicate"
+        ? "That site is already on your block list."
+        : "Enter a valid domain, e.g. youtube.com";
+    siteError.classList.remove("hidden");
+  }
+});
 
-.secondary-btn {
-  width: 100%;
-  padding: 10px;
-  border: none;
-  border-radius: 8px;
-  background: #e74c3c;
-  color: white;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-}
+siteInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") addBtn.click();
+});
 
-.secondary-btn:hover {
-  background: #c0392b;
-}
-
-.status-label {
-  font-size: 13px;
-  opacity: 0.8;
-  margin-bottom: 6px;
-  text-align: center;
-}
-
-.countdown {
-  font-size: 32px;
-  font-weight: 700;
-  text-align: center;
-  margin-bottom: 14px;
-  font-variant-numeric: tabular-nums;
-  color: #6c63ff;
-}
-
-.hidden {
-  display: none;
-}
-
-.add-row {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 4px;
-}
-
-.add-row input {
-  flex: 1;
-  margin-bottom: 0;
-}
-
-.add-row button {
-  padding: 8px 14px;
-  border: none;
-  border-radius: 8px;
-  background: #3a3a5e;
-  color: white;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.add-row button:hover {
-  background: #4a4a78;
-}
-
-#siteList {
-  list-style: none;
-  margin-top: 8px;
-  max-height: 180px;
-  overflow-y: auto;
-}
-
-#siteList li {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 7px 0;
-  font-size: 13px;
-  border-bottom: 1px solid #2e2e50;
-}
-
-#siteList li:last-child {
-  border-bottom: none;
-}
-
-#siteList button {
-  background: none;
-  border: none;
-  color: #e74c3c;
-  cursor: pointer;
-  font-size: 16px;
-  padding: 0 4px;
-}
+init();
