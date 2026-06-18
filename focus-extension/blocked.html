@@ -6,60 +6,123 @@
   <title>Stay Focused</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: linear-gradient(135deg, #1a1a2e, #232342);
-      color: #f0f0f5;
+      background-color: #000000;
+      color: #e5e5e7;
       height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
       text-align: center;
+      overflow: hidden;
     }
-    .box { max-width: 420px; padding: 40px; }
-    .emoji { font-size: 56px; margin-bottom: 20px; }
-    h1 { font-size: 24px; margin-bottom: 10px; }
-    p { opacity: 0.8; font-size: 15px; margin-bottom: 24px; line-height: 1.5; }
+
+    .box { 
+      max-width: 420px; 
+      padding: 40px; 
+      background: #0a0a0c;
+      border-radius: 12px;
+      border: 1px solid #1c1c1e;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.8);
+      transition: border-color 0.3s ease;
+    }
+
+    .box:hover {
+      border-color: #2c2c2e;
+    }
+
+    .emoji { 
+      font-size: 56px; 
+      margin-bottom: 24px; 
+      filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.1));
+    }
+
+    h1 { 
+      font-size: 24px; 
+      font-weight: 600; 
+      letter-spacing: -0.5px; 
+      margin-bottom: 12px;
+      color: #ffffff;
+    }
+    
+    p { 
+      color: #8e8e93; 
+      font-size: 15px; 
+      margin-bottom: 32px; 
+      line-height: 1.6; 
+    }
+    
     #countdown {
-      font-size: 28px;
+      font-size: 36px;
       font-weight: 700;
-      color: #6c63ff;
-      margin-bottom: 24px;
+      color: #ff3b30; 
+      margin-bottom: 32px;
       font-variant-numeric: tabular-nums;
+      letter-spacing: -0.5px;
     }
+    
     button {
-      padding: 10px 20px;
-      border: none;
-      border-radius: 8px;
-      background: #3a3a5e;
-      color: white;
+      padding: 12px 28px;
+      border: 1px solid #2c2c2e;
+      border-radius: 6px;
+      background: #1c1c1e;
+      color: #ffffff;
       cursor: pointer;
       font-size: 14px;
+      font-weight: 500;
+      transition: background 0.2s, border-color 0.2s;
     }
-    button:hover { background: #4a4a78; }
-    .site { color: #6c63ff; font-weight: 600; }
+    
+    button:hover { 
+      background: #2c2c2e;
+      border-color: #48484a;
+    }
+
+    button:active {
+      background: #1c1c1e;
+    }
+    
+    .site { 
+      color: #ffffff; 
+      font-weight: 600; 
+      word-break: break-all;
+      text-decoration: underline;
+      text-decoration-color: #3a3a3c;
+    }
   </style>
 </head>
 <body>
   <div class="box">
-    <div class="emoji" aria-hidden="true">🎯</div>
-    <h1>Stay focused!</h1>
-    <p><span id="siteName" class="site"></span> is blocked during your focus session.</p>
-    <div id="countdown" aria-live="polite">--:--</div>
+    <div class="emoji">🎯</div>
+    <h1>Stay focused</h1>
+    <p><span id="siteName" class="site">This site</span> is blocked during your focus session.</p>
+    <div id="countdown">--:--</div>
     <button id="backBtn">Go Back</button>
   </div>
 
   <script>
     const params = new URLSearchParams(location.search);
-    document.getElementById("siteName").textContent = params.get("site") || "This site";
+    const rawSite = params.get("site");
+    if (rawSite) {
+      try {
+        const cleanSite = rawSite.replace(/^(https?:\/\/)?(www\.)?/, '');
+        document.getElementById("siteName").textContent = cleanSite;
+      } catch (e) {
+        document.getElementById("siteName").textContent = rawSite;
+      }
+    }
 
     document.getElementById("backBtn").addEventListener("click", () => {
       if (history.length > 1) {
         history.back();
       } else {
-        // No safe history to go back to — send to the new tab page instead
-        // of about:blank, which would otherwise be a dead end for the user.
-        location.href = "chrome://newtab";
+        try {
+          window.close();
+        } catch(e) {
+          location.href = "about:blank"; 
+        }
       }
     });
 
@@ -70,11 +133,19 @@
             document.getElementById("countdown").textContent = "—";
             return;
           }
+          
           if (!state || !state.sessionActive || !state.sessionEndTime) {
-            document.getElementById("countdown").textContent = "Session ended";
+            handleSessionEnd();
             return;
           }
-          const remaining = Math.max(0, state.sessionEndTime - Date.now());
+          
+          const remaining = state.sessionEndTime - Date.now();
+          
+          if (remaining <= 0) {
+            handleSessionEnd();
+            return;
+          }
+          
           const totalSec = Math.floor(remaining / 1000);
           const m = Math.floor(totalSec / 60);
           const s = totalSec % 60;
@@ -82,11 +153,21 @@
             `${m}:${s.toString().padStart(2, "0")} remaining`;
         });
       } catch (e) {
-        // Extension context can be invalidated (e.g. reload during dev) —
-        // fail quietly rather than throwing in the page.
         document.getElementById("countdown").textContent = "—";
       }
     }
+
+    function handleSessionEnd() {
+      document.getElementById("countdown").textContent = "Session ended!";
+      document.getElementById("countdown").style.color = "#34c759"; 
+      const targetUrl = params.get("url") || params.get("site");
+      if (targetUrl) {
+        setTimeout(() => {
+          location.href = targetUrl.startsWith('http') ? targetUrl : `https://${targetUrl}`;
+        }, 1000);
+      }
+    }
+
     tick();
     setInterval(tick, 1000);
   </script>
