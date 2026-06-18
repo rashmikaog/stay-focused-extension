@@ -1,110 +1,45 @@
-// popup.js — drives the popup UI
+# Stay Focused
 
-const idleView = document.getElementById("idleView");
-const activeView = document.getElementById("activeView");
-const durationInput = document.getElementById("durationInput");
-const startBtn = document.getElementById("startBtn");
-const stopBtn = document.getElementById("stopBtn");
-const countdownEl = document.getElementById("countdown");
-const siteInput = document.getElementById("siteInput");
-const addBtn = document.getElementById("addBtn");
-const siteList = document.getElementById("siteList");
+A browser extension that blocks distracting websites while a focus timer is running.
 
-let tickInterval = null;
+## What it does
 
-function sendMessage(msg) {
-  return new Promise((resolve) => chrome.runtime.sendMessage(msg, resolve));
-}
+- You set a timer (e.g. 25 minutes) and click Start.
+- While the timer runs, any site on your block list will not load — it redirects to a "Stay focused" message instead.
+- You can add or remove sites from the block list at any time from the popup.
+- Pre-loaded block list: YouTube, Twitter/X, Facebook, Instagram, Reddit, TikTok. Remove any you don't want blocked.
+- The timer keeps running even if you close the popup, switch tabs, or restart your browser — it only stops when the time is up or you click "End Session."
 
-function formatTime(ms) {
-  const totalSec = Math.max(0, Math.floor(ms / 1000));
-  const m = Math.floor(totalSec / 60);
-  const s = totalSec % 60;
-  return `${m}:${s.toString().padStart(2, "0")}`;
-}
+## How to install it in your browser
 
-function renderSiteList(blockList) {
-  siteList.innerHTML = "";
-  blockList.forEach((site) => {
-    const li = document.createElement("li");
-    const span = document.createElement("span");
-    span.textContent = site;
-    const removeBtn = document.createElement("button");
-    removeBtn.textContent = "✕";
-    removeBtn.title = "Remove";
-    removeBtn.addEventListener("click", async () => {
-      const res = await sendMessage({ type: "REMOVE_SITE", site });
-      renderSiteList(res.blockList);
-    });
-    li.appendChild(span);
-    li.appendChild(removeBtn);
-    siteList.appendChild(li);
-  });
-}
+This extension is not on the Chrome Web Store. You load it manually ("unpacked"), which takes about a minute. Works in Chrome, Edge, Brave, and other Chromium-based browsers.
 
-function startTicking(endTime) {
-  clearInterval(tickInterval);
-  function tick() {
-    const remaining = endTime - Date.now();
-    if (remaining <= 0) {
-      clearInterval(tickInterval);
-      showIdle();
-      return;
-    }
-    countdownEl.textContent = formatTime(remaining);
-  }
-  tick();
-  tickInterval = setInterval(tick, 1000);
-}
+**Step 1: Get the files onto your computer**
+- If you downloaded a `.zip`, unzip it first. You should end up with a folder (e.g. `focus-extension`) containing files like `manifest.json`, `background.js`, `popup.html`, etc.
+- If you cloned/downloaded this from GitHub, that folder is what you already have.
 
-function showActive(endTime) {
-  idleView.classList.add("hidden");
-  activeView.classList.remove("hidden");
-  startTicking(endTime);
-}
+**Step 2: Open your browser's extensions page**
+- Chrome: go to `chrome://extensions`
+- Edge: go to `edge://extensions`
 
-function showIdle() {
-  clearInterval(tickInterval);
-  activeView.classList.add("hidden");
-  idleView.classList.remove("hidden");
-}
+**Step 3: Turn on Developer mode**
+- Look for a toggle labeled "Developer mode" — usually top-right of the page. Switch it on.
 
-async function init() {
-  const state = await sendMessage({ type: "GET_STATE" });
-  renderSiteList(state.blockList);
-  if (state.sessionActive && state.sessionEndTime) {
-    showActive(state.sessionEndTime);
-  } else {
-    showIdle();
-  }
-}
+**Step 4: Load the extension**
+- Click the **"Load unpacked"** button that appears.
+- In the file picker, select the entire `focus-extension` folder (the one containing `manifest.json` — not a zip, and not a file inside it).
+- Click "Select Folder" / "Open."
 
-startBtn.addEventListener("click", async () => {
-  const minutes = Math.max(1, Math.min(180, parseInt(durationInput.value, 10) || 25));
-  const res = await sendMessage({ type: "START_SESSION", minutes });
-  if (res.ok) {
-    const state = await sendMessage({ type: "GET_STATE" });
-    showActive(state.sessionEndTime);
-  }
-});
+**Step 5: Done**
+- A target icon (🎯) appears in your browser's toolbar (you may need to click the puzzle-piece icon to pin it).
+- Click it to open the popup, set a timer, and start a focus session.
 
-stopBtn.addEventListener("click", async () => {
-  await sendMessage({ type: "STOP_SESSION" });
-  showIdle();
-});
+## Common issues
 
-addBtn.addEventListener("click", async () => {
-  const value = siteInput.value.trim();
-  if (!value) return;
-  const res = await sendMessage({ type: "ADD_SITE", site: value });
-  if (res.ok) {
-    siteInput.value = "";
-    renderSiteList(res.blockList);
-  }
-});
+- **"Manifest file is missing or unreadable"** — you selected the zip file or a file inside the folder instead of the folder itself. Go back to Step 4 and select the whole folder.
+- **Icon doesn't show in the toolbar** — click the puzzle-piece (extensions) icon in the toolbar and pin "Stay Focused."
+- **A blocked site still loads** — make sure a session is actually active (popup should show a countdown), and that the site's domain is in your block list exactly as it appears in the address bar (e.g. `youtube.com`, not `https://youtube.com`).
 
-siteInput.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") addBtn.click();
-});
+## Want it on Firefox?
 
-init();
+This version is built for Chromium browsers. Firefox uses a different manifest format — ask and I can adapt it.
