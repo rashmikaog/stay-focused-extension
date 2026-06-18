@@ -1,7 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Stay Focused</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -41,10 +42,10 @@
 </head>
 <body>
   <div class="box">
-    <div class="emoji">🎯</div>
+    <div class="emoji" aria-hidden="true">🎯</div>
     <h1>Stay focused!</h1>
     <p><span id="siteName" class="site"></span> is blocked during your focus session.</p>
-    <div id="countdown">--:--</div>
+    <div id="countdown" aria-live="polite">--:--</div>
     <button id="backBtn">Go Back</button>
   </div>
 
