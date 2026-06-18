@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <title>Stay Focused</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e, #232342);
+      color: #f0f0f5;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+    }
+    .box { max-width: 420px; padding: 40px; }
+    .emoji { font-size: 56px; margin-bottom: 20px; }
+    h1 { font-size: 24px; margin-bottom: 10px; }
+    p { opacity: 0.8; font-size: 15px; margin-bottom: 24px; line-height: 1.5; }
+    #countdown {
+      font-size: 28px;
+      font-weight: 700;
+      color: #6c63ff;
+      margin-bottom: 24px;
+      font-variant-numeric: tabular-nums;
+    }
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      background: #3a3a5e;
+      color: white;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button:hover { background: #4a4a78; }
+    .site { color: #6c63ff; font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <div class="emoji">🎯</div>
+    <h1>Stay focused!</h1>
+    <p><span id="siteName" class="site"></span> is blocked during your focus session.</p>
+    <div id="countdown">--:--</div>
+    <button id="backBtn">Go Back</button>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(location.search);
+    document.getElementById("siteName").textContent = params.get("site") || "This site";
+
+    document.getElementById("backBtn").addEventListener("click", () => {
+      history.length > 1 ? history.back() : (location.href = "about:blank");
+    });
+
+    function tick() {
+      chrome.runtime.sendMessage({ type: "GET_STATE" }, (state) => {
+        if (!state || !state.sessionActive || !state.sessionEndTime) {
+          document.getElementById("countdown").textContent = "Session ended";
+          return;
+        }
+        const remaining = Math.max(0, state.sessionEndTime - Date.now());
+        const totalSec = Math.floor(remaining / 1000);
+        const m = Math.floor(totalSec / 60);
+        const s = totalSec % 60;
+        document.getElementById("countdown").textContent =
+          `${m}:${s.toString().padStart(2, "0")} remaining`;
+      });
+    }
+    tick();
+    setInterval(tick, 1000);
+  </script>
+</body>
+</html>
