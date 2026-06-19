@@ -1,46 +1,204 @@
 # Stay Focused
 
-A browser extension that blocks distracting websites while a focus timer is running.
+A lightweight browser extension that helps you stay productive by blocking distracting websites while a focus session is active.
 
-## What it does
+---
 
-- You set a timer (e.g. 25 minutes) and click Start.
-- While the timer runs, any site on your block list will not load — it redirects to a "Stay focused" message instead.
-- You can add or remove sites from the block list at any time from the popup.
-- Pre-loaded block list: YouTube, Twitter/X, Facebook, Instagram, Reddit, TikTok. Remove any you don't want blocked.
-- The timer keeps running even if you close the popup, switch tabs, or restart your browser — it only stops when the time is up or you click "End Session."
-- There's also a "Start 1-min test session" button, handy for quickly checking that blocking works without waiting a full 25 minutes.
+## Overview
 
-## How to install it in your browser
+Stay Focused allows you to create distraction-free work sessions by temporarily blocking websites that commonly interrupt your concentration.
 
-This extension is not on the Chrome Web Store. You load it manually ("unpacked"), which takes about a minute. Works in Chrome, Edge, Brave, and other Chromium-based browsers.
+When a focus session starts, websites in your block list are automatically blocked until the timer expires or you manually end the session.
 
-**Step 1: Get the files onto your computer**
-- If you downloaded a `.zip`, unzip it first. You should end up with a folder (e.g. `focus-extension`) containing files like `manifest.json`, `background.js`, `popup.html`, etc.
-- If you cloned/downloaded this from GitHub, that folder is what you already have.
+The timer continues running even if you:
 
-**Step 2: Open your browser's extensions page**
-- Chrome: go to `chrome://extensions`
-- Edge: go to `edge://extensions`
+* Close the popup
+* Switch tabs
+* Minimize the browser
+* Restart the browser
 
-**Step 3: Turn on Developer mode**
-- Look for a toggle labeled "Developer mode" — usually top-right of the page. Switch it on.
+---
 
-**Step 4: Load the extension**
-- Click the **"Load unpacked"** button that appears.
-- In the file picker, select the entire `focus-extension` folder (the one containing `manifest.json` — not a zip, and not a file inside it).
-- Click "Select Folder" / "Open."
+## Features
 
-**Step 5: Done**
-- A target icon (🎯) appears in your browser's toolbar (you may need to click the puzzle-piece icon to pin it).
-- Click it to open the popup, set a timer, and start a focus session.
+* Custom focus timer
+* Website blocking during active sessions
+* Editable block list
+* Persistent countdown timer
+* One-click test session
+* Simple and lightweight interface
 
-## Common issues
+### Default Block List
 
-- **"Manifest file is missing or unreadable"** — you selected the zip file or a file inside the folder instead of the folder itself. Go back to Step 4 and select the whole folder.
-- **Icon doesn't show in the toolbar** — click the puzzle-piece (extensions) icon in the toolbar and pin "Stay Focused."
-- **A blocked site still loads** — make sure a session is actually active (popup should show a countdown), and that the site's domain is in your block list exactly as it appears in the address bar (e.g. `youtube.com`, not `https://youtube.com`).
+The extension comes pre-configured with:
 
-## Want it on Firefox?
+* youtube.com
+* x.com
+* facebook.com
+* instagram.com
+* reddit.com
+* tiktok.com
 
-This version is built for Chromium browsers. Firefox uses a different manifest format — ask and I can adapt it.
+You can remove any of these or add your own websites at any time.
+
+---
+
+## How It Works
+
+1. Open the extension popup.
+2. Set a focus duration.
+3. Click **Start Session**.
+4. Websites in your block list become inaccessible.
+5. The extension redirects blocked sites to a focus message page.
+6. Blocking automatically ends when the timer expires or when you click **End Session**.
+
+---
+
+## Installation
+
+This extension is not currently available on the Chrome Web Store and must be loaded manually.
+
+### 1. Download the Project
+
+Clone the repository or download it as a ZIP file and extract it.
+
+The project folder should contain files such as:
+
+```text
+focus-extension/
+├── manifest.json
+├── background.js
+├── popup.html
+├── popup.js
+├── blocked.html
+└── ...
+```
+
+### 2. Open the Extensions Page
+
+Chrome:
+
+```text
+chrome://extensions
+```
+
+Edge:
+
+```text
+edge://extensions
+```
+
+Brave:
+
+```text
+brave://extensions
+```
+
+### 3. Enable Developer Mode
+
+Turn on **Developer Mode** from the top-right corner of the extensions page.
+
+### 4. Load the Extension
+
+1. Click **Load unpacked**.
+2. Select the **focus-extension** folder.
+3. Make sure you select the **entire folder containing `manifest.json`**.
+4. Do **not** select:
+
+   * The ZIP file
+   * A file inside the folder
+   * A subfolder within the project
+5. Click **Open** or **Select Folder**.
+
+If you can see `manifest.json` directly inside the selected **focus-extension** folder, you've chosen the correct folder.
+
+### 5. Start Using the Extension
+
+After installation, the extension icon should appear in your browser toolbar.
+
+If it is not visible:
+
+1. Open the Extensions menu.
+2. Locate **Stay Focused**.
+3. Pin the extension to the toolbar.
+
+---
+
+## Quick Test
+
+To verify that everything is working correctly:
+
+1. Open the extension popup.
+2. Click **Start 1-Minute Test Session**.
+3. Visit a website from the block list.
+4. Confirm that the website is redirected to the focus page.
+
+---
+
+## Managing Blocked Websites
+
+You can add or remove websites directly from the popup interface.
+
+### Correct Format
+
+```text
+youtube.com
+reddit.com
+facebook.com
+```
+
+### Incorrect Format
+
+```text
+https://youtube.com
+https://reddit.com
+www.facebook.com
+```
+
+Use only the domain name.
+
+---
+
+## Troubleshooting
+
+### Manifest file is missing or unreadable
+
+You likely selected:
+
+* A ZIP file
+* A file inside the project folder
+* The wrong folder
+
+Go back to the installation steps and make sure you select the **focus-extension** folder containing `manifest.json`.
+
+### Extension icon is not visible
+
+Open the browser's Extensions menu and pin **Stay Focused** to the toolbar.
+
+### A blocked site still loads
+
+Verify that:
+
+* A focus session is active
+* The countdown timer is running
+* The website exists in the block list
+* The domain name is entered correctly
+
+---
+
+## Browser Support
+
+Supported browsers:
+
+* Google Chrome
+* Microsoft Edge
+* Brave
+* Other Chromium-based browsers
+
+Firefox support can be added with minor modifications.
+
+---
+
+## License
+
+This project is available under the MIT License.
