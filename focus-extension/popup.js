@@ -62,7 +62,15 @@ function startTicking(endTime) {
       showIdle();
       return;
     }
+    
     countdownEl.textContent = formatTime(remaining);
+
+    const totalSec = Math.max(0, Math.floor(remaining / 1000));
+    const m = Math.floor(totalSec / 60);
+    const s = totalSec % 60;
+
+    document.getElementById("minutesBox").textContent = m.toString().padStart(2, "0");
+    document.getElementById("secondsBox").textContent = s.toString().padStart(2, "0");
   }
   tick();
   tickInterval = setInterval(tick, 1000);
