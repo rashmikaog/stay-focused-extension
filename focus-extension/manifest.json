@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Stay Focused",
-  "version": "1.0.1",
+  "version": "1.0.4",
   "description": "Block distracting sites and run focus timer sessions to help you stay on task.",
   "permissions": ["storage", "alarms", "tabs", "webNavigation"],
   "host_permissions": ["<all_urls>"],
