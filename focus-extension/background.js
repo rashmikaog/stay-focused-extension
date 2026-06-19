@@ -132,7 +132,10 @@ chrome.webNavigation?.onBeforeNavigate?.addListener?.(async (details) => {
 
   const isBlocked = state.blockList.some((site) => host === site || host.endsWith("." + site));
   if (isBlocked) {
-    const blockedUrl = chrome.runtime.getURL("blocked.html") + "?site=" + encodeURIComponent(host);
+    // FIX HERE: Add &url= to pass the full destination details to blocked.html
+    const blockedUrl = chrome.runtime.getURL("blocked.html") + 
+                       "?site=" + encodeURIComponent(host) + 
+                       "&url=" + encodeURIComponent(details.url);
     chrome.tabs.update(details.tabId, { url: blockedUrl });
   }
 });
