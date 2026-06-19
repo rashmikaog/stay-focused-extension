@@ -25,7 +25,7 @@ header h1 {
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  margin-bottom: 24px;
+  margin-bottom: 12px;
   text-align: center;
   color: #ffffff;
   border-bottom: 1px solid #1c1c1e;
@@ -35,7 +35,7 @@ header h1 {
 .card {
   background: transparent;
   padding: 0;
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 .card h2 {
